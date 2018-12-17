@@ -15,7 +15,7 @@ import (
 // Synchronizes trade history from HaloDEX to local directory
 /*
 	 Steps:
-	 1. Load existing history file if exists
+	 1. Load existing history file if exists.
 	 2. Get the last trade's timestamp if file exists.
 		 Otherwise use 0 to retrieve trades since inception.
 	 3.	Add retrieved trades to loaded file and save
@@ -93,9 +93,6 @@ func sync(ticker string, generateBars bool) (err error) {
 				log.Printf("Failed to generate bar for %s resolution %d\n", symbol.Ticker, res)
 				continue
 			}
-			// if cachedBars[ticker][fmt.Sprint(res)] == nil {
-			// 	cachedBars[ticker][fmt.Sprint(res)] = []Bar{}
-			// }
 			// update cache
 			cachedBars[ticker][fmt.Sprint(res)] = bars
 		}

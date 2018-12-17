@@ -1,0 +1,7 @@
+{
+    "halodex" :{
+        "url": "",
+        "urlgql": "",
+    },
+    "syncintervalmins": 10
+}

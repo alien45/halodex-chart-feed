@@ -9,16 +9,15 @@ import (
 
 // Bar as described here: https://github.com/tradingview/charting_library/wiki/UDF#bars
 type Bar struct {
-	// Unix Epoch time in seconds
 	Time         time.Time
 	TimeEnd      time.Time
-	UnixTime     int64   `json:"t"`
+	UnixTime     int64   `json:"t"` // Unix Epoch time in seconds
 	ClosingPrice float64 `json:"c"`
 	OpeningPrice float64 `json:"o"`
 	HighPrice    float64 `json:"h"`
 	LowPrice     float64 `json:"l"`
 	Volume       float64 `json:"v"`
-	Prices       []float64
+	// Prices       []float64
 }
 
 // SetPrices ...
@@ -61,19 +60,18 @@ func generateResolution(trades []client.Trade, resolutionMins int) (bars []Bar, 
 			// Find closest starting point
 			bar.Time = t.Time.Truncate(time.Minute * time.Duration(resolutionMins))
 			bar.TimeEnd = bar.Time.Add(time.Minute * time.Duration(resolutionMins))
-			// log.Println(t.Time, bar.Time, bar.TimeEnd)
 			bar.UnixTime = bar.Time.Unix()
 			bar.SetPrices(t.Price)
 			continue
 		}
 		// bar time is set. check if current trade is within the bar time range
-		// log.Println(t.Time.UTC(), bar.TimeEnd, " | After: ", t.Time.After(bar.TimeEnd))
 		if t.Time.After(bar.TimeEnd) {
 			bars = append(bars, bar)
 			// start of the next bar
 			bar = Bar{}
 		}
 		bar.SetPrices(t.Price)
+		bar.Volume += t.Amount
 	}
 	return
 }

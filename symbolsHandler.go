@@ -188,7 +188,7 @@ func newSymbol(name, ticker, description, address, baseAddress string) (s Symbol
 	s.HasEmptyBars = false
 	s.ForceSessionRebuild = true
 	s.DataStatus = "pulsed"
-	s.HasNoVolume = true
+	s.HasNoVolume = false
 	// For sync
 	s.Address = address
 	s.BaseAddress = baseAddress

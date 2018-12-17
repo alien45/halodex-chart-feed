@@ -1,2 +1,6 @@
-*.json
+config.json
+data/*/*.json
 *.log
+#temporary
+image/
+public/
