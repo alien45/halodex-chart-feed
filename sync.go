@@ -77,25 +77,40 @@ func sync(ticker string, generateBars bool) (err error) {
 		log.Println("File save failed", tradesFile, err)
 		return
 	}
+
 	log.Printf("Sync complete. Ticker: %s, Total Trades: %d, New: %d", ticker, len(trades), len(newTrades))
-	if generateBars {
-		log.Println("Generating bars")
-		if cachedBars == nil {
-			cachedBars = map[string]map[string][]Bar{}
-		}
-		if cachedBars[ticker] == nil {
-			cachedBars[ticker] = map[string][]Bar{}
-		}
-		// Generate resolution bars
-		for _, res := range supportedResolutionsInt {
-			bars, err := generateNSaveResolution(trades, res, dir)
-			if err != nil {
-				log.Printf("Failed to generate bar for %s resolution %d\n", symbol.Ticker, res)
-				continue
+	if !generateBars {
+		return
+	}
+
+	log.Println("Generating bars")
+	if cachedBars == nil {
+		cachedBars = map[string]map[string][]Bar{}
+	}
+	if cachedBars[ticker] == nil {
+		cachedBars[ticker] = map[string][]Bar{}
+	}
+	// Check if there's any pre-split conversion required
+	if strings.ToUpper(conf.SplitTicker) == strings.ToUpper(symbol.Ticker) &&
+		conf.SplitAmount > 0 {
+		for i, t := range trades {
+			if t.Time.Before(conf.PreSplitTime) && conf.SplitAmount > 0 {
+				// Convert trade amount and price before split to match post-split ratio
+				trades[i].Amount *= conf.SplitAmount
+				trades[i].Price /= conf.SplitAmount
 			}
-			// update cache
-			cachedBars[ticker][fmt.Sprint(res)] = bars
 		}
+	}
+	// Generate resolution bars
+	for i, resName := range resolutions {
+		res := resolutionMins[i]
+		bars, err := generateNSaveResolution(trades, res, resName, dir)
+		if err != nil {
+			log.Printf("Failed to generate bar for %s resolution %s\n", symbol.Ticker, resName)
+			continue
+		}
+		// update cache
+		cachedBars[ticker][fmt.Sprint(res)] = bars
 	}
 	return
 }

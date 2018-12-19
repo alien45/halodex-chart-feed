@@ -36,19 +36,6 @@ type History struct {
 	NextTime int64 `json:"nextTime"`
 }
 
-// Bar as described here: https://github.com/tradingview/charting_library/wiki/UDF#bars
-// type Bar struct {
-// 	// Unix Epoch time in seconds
-// 	Time         time.Time
-// 	UnixTime     int64   `json:"t"`
-// 	ClosingPrice float64 `json:"c"`
-// 	OpeningPrice float64 `json:"o"`
-// 	HighPrice    float64 `json:"h"`
-// 	LowPrice     float64 `json:"l"`
-// 	Volume       float64 `json:"v"`
-// 	Prices       []float64
-// }
-
 func historyHandler(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 	symbol := strings.ToLower(params["symbol"][0])
@@ -99,7 +86,7 @@ func getResolution(symbol, resolution string) (bars []Bar, err error) {
 	if bars, exists := cachedBars[symbol][resolution]; exists {
 		return bars, nil
 	}
-	log.Printf("Loading bars from storage: %s/%s", symbol, resolution)
+	log.Printf("getResolution() Loading bars from storage: %s/%s", symbol, resolution)
 	filename := fmt.Sprintf("%s/%s/%s.json", dataRootDir, symbol, resolution)
 	jsonStr, err := client.ReadFile(filename)
 	if err != nil {

@@ -17,7 +17,6 @@ type Bar struct {
 	HighPrice    float64 `json:"h"`
 	LowPrice     float64 `json:"l"`
 	Volume       float64 `json:"v"`
-	// Prices       []float64
 }
 
 // SetPrices ...
@@ -34,28 +33,27 @@ func (bar *Bar) SetPrices(price float64) {
 		bar.LowPrice = price
 	}
 	bar.ClosingPrice = price
-	//bar.Prices = append(bar.Prices, price)
 }
 
-func generateNSaveResolution(trades []client.Trade, res int, parentDir string) (bars []Bar, err error) {
-	// Generate 60 minute bars
+func generateNSaveResolution(trades []client.Trade, res int, resName, parentDir string) (bars []Bar, err error) {
+	// Generate X minute resolution bars
 	bars, err = generateResolution(trades, res)
 	if err != nil {
 		return nil, err
 	}
-	return bars, client.SaveJSONFile(fmt.Sprintf("%s/%d.json", parentDir, res), bars)
+	return bars, client.SaveJSONFile(fmt.Sprintf("%s/%s.json", parentDir, resName), bars)
 }
 
 // Expects trades to be in decending order
 func generateResolution(trades []client.Trade, resolutionMins int) (bars []Bar, err error) {
 	bar := Bar{}
 	// Ignore the first few TEST trades by Halo team
-	startDate, _ := time.Parse(time.RFC3339, "2018-10-20T00:00:00Z")
 	for i := len(trades) - 1; i >= 0; i-- {
 		t := trades[i]
-		if t.Time.Before(startDate) {
+		if t.Time.Before(conf.IgnoreTradesBefore) {
 			continue
 		}
+
 		if bar.Time.IsZero() {
 			// Find closest starting point
 			bar.Time = t.Time.Truncate(time.Minute * time.Duration(resolutionMins))

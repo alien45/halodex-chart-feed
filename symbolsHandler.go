@@ -5,38 +5,6 @@ import (
 	"strings"
 )
 
-// Supported ticker symbols
-var symbols = []Symbol{
-	newSymbol(
-		"Halo",
-		"HALO",
-		"Halo Platform",
-		"0x0000000000000000000000000000000000000000",
-		"0xd314d564c36c1b9fbbf6b440122f84da9a551029",
-	),
-	newSymbol(
-		"VET",
-		"VET",
-		"Vechain",
-		"0x280750ccb7554faec2079e8d8719515d6decdc84",
-		"0xd314d564c36c1b9fbbf6b440122f84da9a551029",
-	),
-	newSymbol(
-		"VTHO",
-		"VTHO",
-		"Vechain Thor",
-		"0x0343350a2b298370381cac03fe3c525c28600b21",
-		"0xd314d564c36c1b9fbbf6b440122f84da9a551029",
-	),
-	newSymbol(
-		"DBET",
-		"DBET",
-		"DecentBet",
-		"0x59195ebd987bde65258547041e1baed5fbd18e8b",
-		"0xd314d564c36c1b9fbbf6b440122f84da9a551029",
-	),
-}
-
 // Symbol describes a tradable entity for which trading chart can be generated.
 // Attributes must be as exactly listed here:
 // https://github.com/tradingview/charting_library/wiki/Symbology
@@ -183,7 +151,7 @@ func newSymbol(name, ticker, description, address, baseAddress string) (s Symbol
 	s.MinMov = 0.01
 	s.PriceScale = 1e10
 	s.HasIntraDay = true // [?]
-	s.SupportedResolutions = supportedResolutions
+	s.SupportedResolutions = conf.ChartConfig.Resolutions
 	s.HasDaily = false // [?]
 	s.HasEmptyBars = false
 	s.ForceSessionRebuild = true
