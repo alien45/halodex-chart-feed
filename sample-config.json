@@ -1,7 +1,20 @@
 {
     "halodex" :{
-        "url": "",
+        "url": "https://public.halodex.io",
         "urlgql": "",
+        "tokenexpiremins": 480,
+        "tickerexpiremins": 3
     },
-    "syncintervalmins": 10
+    "ignoretradesbefore": "2018-10-20T00:00:00Z",
+    "syncintervalmins": 10,
+    "splitticker": "HALO",
+    "presplittime": "2018-12-18T19:54:47Z",
+    "splitamount": 800,
+    "chartconfig": {
+		"supported_resolutions":    ["5", "15", "30", "60", "180", "360", "720", "1440"],
+		"supports_group_request":   false,
+		"supports_marks":           false,
+		"supports_search":          true,
+		"supports_timescale_marks": false
+	}
 }

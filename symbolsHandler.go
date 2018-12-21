@@ -1,8 +1,11 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"strings"
+
+	"github.com/alien45/halo-info-bot/client"
 )
 
 // Symbol describes a tradable entity for which trading chart can be generated.
@@ -161,6 +164,39 @@ func newSymbol(name, ticker, description, address, baseAddress string) (s Symbol
 	s.Address = address
 	s.BaseAddress = baseAddress
 	return
+}
+
+func updateSymbols() {
+	log.Println("Updaing symbols")
+	tokens, err := dex.GetTokens()
+	symbols = []Symbol{}
+	panicIf(err, "Failed to retrieve tokens")
+	log.Println("Tokens received: ", len(tokens))
+	baseTokens := []client.Token{}
+	quoteTokens := []client.Token{}
+	for ticker, token := range tokens {
+		ticker = strings.ToUpper(ticker)
+		if token.Type == "BASE" {
+			baseTokens = append(baseTokens, token)
+		} else {
+			quoteTokens = append(quoteTokens, token)
+		}
+	}
+	for _, baseT := range baseTokens {
+		for _, quoteT := range quoteTokens {
+			s := newSymbol(
+				quoteT.Ticker+"/"+baseT.Ticker,
+				quoteT.Ticker,
+				quoteT.Name,
+				quoteT.HaloChainAddress, baseT.HaloChainAddress)
+			log.Println("Adding pair: ", quoteT.Ticker+"/"+baseT.Ticker,
+				quoteT.Ticker,
+				quoteT.Name,
+				quoteT.HaloChainAddress, baseT.HaloChainAddress)
+			symbols = append(symbols, s)
+		}
+	}
+
 }
 
 // Only search by name or ticker for now

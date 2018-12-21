@@ -6,8 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/alien45/halo-info-bot/client"
@@ -25,11 +23,11 @@ const dataRootDir = "./data"
 
 var err error
 var dex client.DEX
-var syncIntervalMins int
+var syncIntervalMins int // Sync trades every x minutes
 var conf Config
-var resolutions []string
-var resolutionMins []int
-var symbols []Symbol
+var resolutions []string // sypported bar resolutions
+var resolutionMins []int // bar resolution in minutes. Used when generating bars
+var symbols []Symbol     // Supported symbols
 
 // Config describes cofigurations and settings
 type Config struct {
@@ -58,75 +56,19 @@ func main() {
 	panicIf(err, "Failed to unmarshal config json")
 	dex = conf.HaloDEX
 	syncIntervalMins = conf.SyncIntervalMins
-	resolutions = conf.ChartConfig.Resolutions
-	if len(resolutions) == 0 {
-		// Set defaults
-		resolutions = []string{"30", "60", "360", "1D"}
-		conf.ChartConfig.Resolutions = resolutions
-	}
-	for i := 0; i < len(resolutions); i++ {
-		multiplier := 0
-		minStr := resolutions[i]
-		if arr := strings.Split(resolutions[i], "D"); len(arr) > 1 {
-			// Daily resolutions
-			multiplier = 1440
-			minStr = arr[0]
-		} else if arr := strings.Split(resolutions[i], "W"); len(arr) > 1 {
-			// Weekly resolutions
-			multiplier = 10080
-			minStr = arr[0]
-		} else if arr := strings.Split(resolutions[i], "M"); len(arr) > 1 {
-			// Monthly resolutions
-			multiplier = 43200
-			minStr = arr[0]
-		}
-		minutesInt, err := strconv.Atoi(minStr)
-		if err == nil {
-			resolutionMins = append(resolutionMins, minutesInt*multiplier)
-		}
-	}
-
-	// Supported ticker symbols
-	symbols = []Symbol{
-		newSymbol(
-			"Halo",
-			"HALO",
-			"Halo Platform",
-			"0x0000000000000000000000000000000000000000",
-			"0xd314d564c36c1b9fbbf6b440122f84da9a551029",
-		),
-		newSymbol(
-			"VET",
-			"VET",
-			"Vechain",
-			"0x280750ccb7554faec2079e8d8719515d6decdc84",
-			"0xd314d564c36c1b9fbbf6b440122f84da9a551029",
-		),
-		newSymbol(
-			"VTHO",
-			"VTHO",
-			"Vechain Thor",
-			"0x0343350a2b298370381cac03fe3c525c28600b21",
-			"0xd314d564c36c1b9fbbf6b440122f84da9a551029",
-		),
-		newSymbol(
-			"DBET",
-			"DBET",
-			"DecentBet",
-			"0x59195ebd987bde65258547041e1baed5fbd18e8b",
-			"0xd314d564c36c1b9fbbf6b440122f84da9a551029",
-		),
-	}
+	setupResolutions()
+	// Update supported tickers/symbols
+	updateSymbols()
 	// Register http handlers
 	registerHanders(map[string]func(http.ResponseWriter, *http.Request){
 		// TradingView chart configuration data
 		"/config": func(w http.ResponseWriter, r *http.Request) {
 			respondJSON(w, conf.ChartConfig, ok200)
 		},
-		"/symbol_info": respondNotImplemented, // NOT REQUIRED
+		"/symbol_info": respondNotImplemented,
 		"/symbols":     symbolsHandler,
 		"/search":      searchHandler,
-		"/history":     historyHandler, // TODO:
+		"/history":     historyHandler,
 	})
 
 	args := os.Args[1:]
@@ -134,23 +76,25 @@ func main() {
 	if len(args) > 0 {
 		port = args[0]
 	}
-	go syncTrades()
-	go syncTradesInterval()
+	go syncTradesInterval(true)
 	log.Println("HaloDEX chart data feed server started at port ", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
 
-func syncTradesInterval() {
+func syncTradesInterval(execOnInit bool) {
+	if execOnInit {
+		syncTrades()
+	}
 	// Execute on interval
 	for range time.Tick(time.Minute * time.Duration(conf.SyncIntervalMins)) {
 		go syncTrades()
 	}
 }
+
 func syncTrades() {
-	sync("halo", true)
-	sync("dbet", true)
-	sync("vet", true)
-	sync("vtho", true)
+	for _, symbol := range symbols {
+		sync(symbol.Ticker, true)
+	}
 }
 
 func registerHanders(handlers map[string]func(http.ResponseWriter, *http.Request)) {
@@ -161,7 +105,7 @@ func registerHanders(handlers map[string]func(http.ResponseWriter, *http.Request
 
 func allowCORS(handler func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("[request] [config] %s", r.URL.Path)
+		log.Printf("[request] %s | [ip] %s", r.URL.RequestURI(), r.RemoteAddr)
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type,access-control-allow-origin, access-control-allow-headers")
 		handler(w, r)
