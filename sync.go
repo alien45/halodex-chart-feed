@@ -82,34 +82,5 @@ func sync(ticker string, generateBars bool) (err error) {
 	if generateBars {
 		generateNSaveBars(ticker, dir, trades)
 	}
-	// if cachedBars == nil {
-	// 	cachedBars = map[string]map[string][]Bar{}
-	// }
-	// if cachedBars[ticker] == nil {
-	// 	cachedBars[ticker] = map[string][]Bar{}
-	// }
-	// // Check if there's any pre-split conversion required
-	// if strings.ToUpper(conf.SplitTicker) == strings.ToUpper(symbol.Ticker) &&
-	// 	conf.SplitAmount > 0 {
-	// 	for i, t := range trades {
-	// 		if t.Time.Before(conf.PreSplitTime) && conf.SplitAmount > 0 {
-	// 			// Convert trade amount and price before split to match post-split ratio
-	// 			trades[i].Amount *= conf.SplitAmount
-	// 			trades[i].Price /= conf.SplitAmount
-	// 		}
-	// 	}
-	// }
-	// // Generate resolution bars
-	// for i, resName := range resolutions {
-	// 	res := resolutionMins[i]
-	// 	log.Println("Generating resolution: ", resName, res)
-	// 	bars, err := generateNSaveResolution(trades, res, resName, dir)
-	// 	if err != nil {
-	// 		log.Printf("Failed to generate bar for %s resolution %s\n", symbol.Ticker, resName)
-	// 		continue
-	// 	}
-	// 	// update cache
-	// 	cachedBars[ticker][fmt.Sprint(res)] = bars
-	// }
 	return
 }

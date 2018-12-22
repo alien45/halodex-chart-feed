@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -52,7 +53,7 @@ type Symbol struct {
 	// It is 10^number-of-decimal-places.
 	// If a price is displayed as 1.01, pricescale is 100;
 	// If it is displayed as 1.005, pricescale is 1000.
-	// [=] use 1e10
+	// [=] use 1e8
 	PriceScale int64 `json:"pricescale"`
 	// MinMove2 for common prices is 0 or it can be skipped
 	// [=] use 0
@@ -151,16 +152,20 @@ func newSymbol(name, ticker, description, address, baseAddress string) (s Symbol
 	s.Exchange = "HaloDEX"
 	s.ListedExchange = "HaloDEX"
 	s.TimeZone = "Etc/UTC"
-	s.MinMov = 0.01
-	s.PriceScale = 1e10
+	s.MinMov = 1
+	s.PriceScale = 1e8
 	s.HasIntraDay = true // [?]
-	s.SupportedResolutions = conf.ChartConfig.Resolutions
+	s.IntraDayMultipliers = []string{}
+	for i := 0; i < len(resolutionMins); i++ {
+		s.IntraDayMultipliers = append(s.IntraDayMultipliers, fmt.Sprint(resolutionMins[i]))
+	}
+	s.SupportedResolutions = resolutions
 	s.HasDaily = false // [?]
 	s.HasEmptyBars = false
 	s.ForceSessionRebuild = true
 	s.DataStatus = "pulsed"
 	s.HasNoVolume = false
-	// For sync
+	// For HaloDEX sync purposes
 	s.Address = address
 	s.BaseAddress = baseAddress
 	return
@@ -178,22 +183,22 @@ func updateSymbols() {
 		ticker = strings.ToUpper(ticker)
 		if token.Type == "BASE" {
 			baseTokens = append(baseTokens, token)
-		} else {
-			quoteTokens = append(quoteTokens, token)
+			continue
 		}
+		quoteTokens = append(quoteTokens, token)
+
 	}
 	for _, baseT := range baseTokens {
 		for _, quoteT := range quoteTokens {
+			symbolStr := quoteT.Ticker + "/" + baseT.Ticker
 			s := newSymbol(
-				quoteT.Ticker+"/"+baseT.Ticker,
-				quoteT.Ticker,
-				quoteT.Name,
-				quoteT.HaloChainAddress, baseT.HaloChainAddress)
-			log.Println("Adding pair: ", quoteT.Ticker+"/"+baseT.Ticker,
-				quoteT.Ticker,
+				symbolStr,
+				symbolStr,
 				quoteT.Name,
 				quoteT.HaloChainAddress, baseT.HaloChainAddress)
 			symbols = append(symbols, s)
+			log.Println("Adding pair: ", symbolStr, quoteT.Name,
+				quoteT.HaloChainAddress, baseT.HaloChainAddress)
 		}
 	}
 
@@ -213,23 +218,17 @@ func seachSymbols(tickerOrName, typeStr, exchange string) (result []Symbol, coun
 	return
 }
 
-func findSymbol(ticker string) (result Symbol, found bool) {
-	exchange := ""
-	hasExchange := false
-	ar := strings.Split(ticker, ":")
+func findSymbol(symbolStr string) (result Symbol, found bool) {
+	ar := strings.Split(symbolStr, ":")
 	if len(ar) > 1 && strings.TrimSpace(ar[1]) != "" {
-		// Exchange unique symbol supplied
-		hasExchange = true
-		exchange = ar[0]
-		ticker = ar[1]
+		// Ignore exchange
+		symbolStr = ar[1]
 	}
 	for _, symbol := range symbols {
-		if strings.ToLower(symbol.Ticker) == strings.ToLower(ticker) {
-			if !hasExchange || strings.ToLower(symbol.Exchange) == strings.ToLower(exchange) {
-				result = symbol
-				found = true
-				return
-			}
+		if strings.ToLower(symbol.Name) == strings.ToLower(symbolStr) {
+			result = symbol
+			found = true
+			return
 		}
 	}
 	return
@@ -238,13 +237,13 @@ func findSymbol(ticker string) (result Symbol, found bool) {
 // symbolsHandler returns a specific symbol by Ticker or Name or
 // Exchange and ticker as in the following format of "Exchange:Ticker"
 func symbolsHandler(w http.ResponseWriter, r *http.Request) {
-	ticker := r.URL.Query().Get("symbol")
-	if ticker == "" {
+	symbolStr := r.URL.Query().Get("symbol")
+	if symbolStr == "" {
 		respondError(w, "", err400)
 		return
 	}
 
-	result, found := findSymbol(ticker)
+	result, found := findSymbol(symbolStr)
 	if !found {
 		respondError(w, "", err404)
 		return
@@ -281,7 +280,7 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	for i := 0; i < len(result); i++ {
 		s := result[i]
 		srsResult = append(srsResult, SearchResultSymbol{
-			Symbol:      s.Ticker,
+			Symbol:      s.Name,
 			FullName:    s.Description,
 			Description: s.Description,
 			Exchange:    s.Exchange,

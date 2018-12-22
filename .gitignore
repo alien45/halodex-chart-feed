@@ -1,6 +1,9 @@
 config.json
-data/*/*.json
-*.log
+data/
 #temporary
 image/
 public/
+
+debug.log
+error.log
+

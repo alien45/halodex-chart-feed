@@ -60,13 +60,6 @@ func historyHandler(w http.ResponseWriter, r *http.Request) {
 			h.LowPrice = append(h.LowPrice, bars[i].LowPrice)
 			h.Volume = append(h.Volume, bars[i].Volume)
 		}
-		// if t > to {
-		// 	// end of requested time range
-		// 	if i < len(bars)-1 {
-		// 		// nextTime = t
-		// 	}
-		// 	break
-		// }
 	}
 
 	if len(h.BarTime) == 0 {

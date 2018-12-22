@@ -78,10 +78,9 @@ func generateNSaveBars(ticker, parentDir string, trades []client.Trade) {
 		cachedBars[ticker] = map[string][]Bar{}
 	}
 	// Check if there's any pre-split conversion required
-	if strings.ToUpper(conf.SplitTicker) == strings.ToUpper(ticker) &&
-		conf.SplitAmount > 0 {
+	if strings.ToUpper(conf.SplitTicker) == strings.ToUpper(ticker) && conf.SplitAmount > 0 {
 		for i, t := range trades {
-			if t.Time.Before(conf.PreSplitTime) && conf.SplitAmount > 0 {
+			if t.Time.Before(conf.PreSplitTime) {
 				// Convert trade amount and price before split to match post-split ratio
 				trades[i].Amount *= conf.SplitAmount
 				trades[i].Price /= conf.SplitAmount
